@@ -91,7 +91,7 @@ def getLayerData(query):
     data = json
     props = query.split("/")
     for prop in props:
-        if len(prop) is 0:
+        if len(prop) == 0:
             continue
         if prop.isdigit():
             prop = int(prop)
