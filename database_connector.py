@@ -27,6 +27,8 @@ def generateID():
     return hash
 
 def makeUser(username, password):
+    if not os.path.exists("data"):
+        os.mkdir("data")
     if not os.path.exists(user_db_file):
         with open(user_db_file, "w") as jsonfile:
             json.dump({}, jsonfile)
