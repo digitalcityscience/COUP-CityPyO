@@ -8,6 +8,16 @@ def test_life():
     response = requests.get(root_url)
     assert(response.status_code == 200)
 
+def test_register_pos():
+    username = "testuser"
+    password = "blubb"
+    data = {
+        "username":username,
+        "password":password
+        }
+    response = requests.post(root_url+"register",json=data)
+    assert(response.status_code == 200)
+
 def test_login_pos():
     username = "testuser"
     password = "blubb"
@@ -37,16 +47,6 @@ def test_login_neg_user():
         }
     response = requests.post(root_url+"login",json=data)
     assert(response.status_code == 401)
-
-def test_register_pos():
-    username = "testuser"
-    password = "blubb"
-    data = {
-        "username":username,
-        "password":password
-        }
-    response = requests.post(root_url+"register",json=data)
-    assert(response.status_code == 200)
 
 def test_register_neg():
     username = "testuser"
@@ -95,21 +95,21 @@ def test_layerchange_nonexistant():
     response = requests.post(root_url+"addLayerData/"+query,json=data)
     assert(response.status_code == 400)
 
+def test_layerchange_add2():
+    query = "test_layer2/"
+    data = {
+        "userid":getUserId("testuser"),
+        "data" : {"data": [{"state": 0}, {"state": 2}, {"state": 4}]}
+        }
+    response = requests.post(root_url+"addLayerData/"+query,json=data)
+    assert(response.status_code == 200)
+    
 def test_layerchange_add():
     import random
     query = "test_layer2/data/1/state"
     data = {
         "userid":getUserId("testuser"),
         "data" : {"somedata":random.randint(0,1000)}
-        }
-    response = requests.post(root_url+"addLayerData/"+query,json=data)
-    assert(response.status_code == 200)
-
-def test_layerchange_add2():
-    query = "test_layer2/"
-    data = {
-        "userid":getUserId("testuser"),
-        "data" : {"data": [{"state": 0}, {"state": 2}, {"state": 4}]}
         }
     response = requests.post(root_url+"addLayerData/"+query,json=data)
     assert(response.status_code == 200)
