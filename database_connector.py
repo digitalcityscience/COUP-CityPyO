@@ -75,75 +75,83 @@ def deleteUser(userid):
     with open(user_db_file, "w") as jsonfile:
         json.dump(jsondata, jsonfile)
 
-# def getUserData(username):
-#     dbentry = readCSVbyKey("users_db.csv", username)
-#     if not dbentry:# or len(dbentry) < 3:
-#         raise ValueError("this user was not found or has no data!")
-#     if len(dbentry) < 3:
-#         return {}
-#     return json.loads(dbentry[2])
+def getLayer(userid, layername):
+    # try globals first
+    filepath = "data/global/"
+    filepath += layername
+    filepath += ".json"
 
-# def setUserData(userid, userdata):
-#     if checkUser(userid): # user exists
-#         del userdata["username"] # anonymisation :P
+    import os.path
+    if os.path.isfile(filepath):
+        with open(filepath) as layerfile:
+            return json.load(layerfile)
+    
+    # try users layers insteads
+    filepath = "data/user/"
+    filepath += userid 
+    filepath += "/"
+    filepath += layername
+    filepath += ".json"
+    if os.path.isfile(filepath):
+        with open(filepath) as layerfile:
+            return json.load(layerfile)
+    
+    raise FileNotFoundError
 
-#         # delete all empty and null values from userdata
-#         userdata = {k: v for k, v in userdata.items() if v is not None and v is not ""}
+def addLayer(userid,layername,data):
+    filepath = "data/user/"
+    filepath += userid 
+    filepath += "/"
+    if not os.path.exists(filepath):
+        # make user directory
+        os.makedirs(filepath)
+    filepath += layername
+    filepath += ".json"
+    with open(filepath, "w") as layerfile:
+        json.dump(data, layerfile)
 
-#         file = "users_db.csv"
-#         rows = []
-#         username = ""
-#         with open(file, 'r') as csvfile:
-#             reader = csv.reader(csvfile, delimiter=',', quotechar='\'') # use ' as quotechar, since json string representation uses "
-#             for row in reader:
-#                 if row[1] != userid:
-#                     rows.append(row)
-#                 else: # this row will be overwritten
-#                     username = row[0]
-#         with open(file, 'w', newline='') as csvfile: # newline '' prohibits stupid windows CR
-#             csvwriter = csv.writer(csvfile, delimiter=',', quotechar='\'', quoting=csv.QUOTE_MINIMAL) # use ' as quotechar, since json string representation uses "
-#             csvwriter.writerows(rows)
-#             csvwriter.writerow([username,userid,json.dumps(userdata)])
+def recurse_change(json, query_list, new_data):
+    prop = query_list[0]
+    query_list = query_list[1:]
+    if prop.isdigit():
+        prop = int(prop)
+    if len(query_list) == 0:
+        json[prop] = new_data
+        return json
+    else:
+        json[prop] = recurse_change(json[prop],query_list,new_data)
+        return json
 
-#     else:
-#         raise ValueError("this user id was not found!")
+def changeLayer(userid,layername,query,data):
+    filepath = "data/user/"
+    filepath += userid 
+    filepath += "/"
+    filepath += layername
+    filepath += ".json"
 
-# def getTimeStamp():
-#     return datetime.datetime.today()
+    query = [q for q in query if q and q != ""]
 
-# def appendData(userid, data):
-#     file = "data_db.csv"
-#     numLines = None
-#     with open(file, 'r') as csvfile:
-#         lines = csv.reader(csvfile, delimiter=',')
-#         numLines = len(list(lines)) # get the current number of entries for use as an id
+    if os.path.isfile(filepath):
+        # layer already exists
 
-#     with open(file, 'a', newline='') as csvfile:
-#         csvwriter = csv.writer(csvfile, delimiter=',',
-#                                 quotechar='\'', quoting=csv.QUOTE_MINIMAL) # use ' as quotechar, since json string representation uses "
+        if len(query) == 0:
+            # overwrite whole file
+            jsondata = data
+        else:
+            # only overwrite part
+            jsondata = {}
+            with open(filepath) as layerfile:
+                jsondata =  json.load(layerfile)
+            
+            # update
+            jsondata = recurse_change(jsondata,query,data)
 
-#         timestamp = getTimeStamp()
-#         if data.get("yesterday"): # someone forgot, huh?
-#             # set to latest second of yesterday, so this will be the most recent entry of yesterday
-#             timestamp -= datetime.timedelta(days=1)
-#             timestamp = timestamp.replace(hour=23,minute=59,second=59,microsecond=999999)
-#         newEntry = [numLines, timestamp, userid, json.dumps(data) ]
-#         csvwriter.writerow(newEntry)
-
-# def getFullDumpStr():
-#     file = "data_db.csv"
-#     output = ""
-#     with open(file, 'r') as csvfile:
-#         reader = csv.reader(csvfile, delimiter=',', quotechar='\'') # use ' as quotechar, since json string representation uses "
-#         for line in reader:
-#             output += str(line) + "\n"
-#     return output
-
-# def getFullDumpJSON():
-#     file = "data_db.csv"
-#     output = []
-#     with open(file, 'r') as csvfile:
-#         reader = csv.DictReader(csvfile, delimiter=',', quotechar='\'') # use ' as quotechar, since json string representation uses "
-#         for line in reader:
-#             output.append(dict(line))
-#     return output
+        #write
+        with open(filepath, "w") as layerfile:
+            json.dump(jsondata, layerfile)
+    else:
+        # layer does not exist yet
+        if len(query) > 0:
+            raise ValueError("can't update non-existant layer!"+layername)
+        addLayer(userid,layername,data)
+    
