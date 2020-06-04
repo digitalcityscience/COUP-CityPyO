@@ -1,5 +1,5 @@
 from flask import Flask, request, abort
-from database_connector import makeUser,checkPass,getUserId
+from database_connector import makeUser,checkPass,getUserId,getLayer,changeLayer
 
 app = Flask(__name__)
 
@@ -29,8 +29,7 @@ def test():
 
 @app.route('/login', methods = ['POST'])
 def login():
-    print(request.json)
-    params = request.json
+    params = parseReq(request)
     if not params:
         abort(400)
     username = params.get('username')
@@ -63,6 +62,57 @@ def register():
 @app.route('/')
 def index():
     return "Hi :)"
+
+@app.route("/getLayer")
+@app.route("/getLayer/")
+def getLayerRoute():
+    params = request.json
+    layer = params.get("layer")
+    userid = params.get("userid")
+    try:
+        return getLayer(userid,layer)
+    except FileNotFoundError as e:
+        print("/getLayer",params)
+        print(e)
+        abort(400)
+        
+@app.route("/getLayer/<path:query>")
+def getLayerData(query):
+    params = request.json
+    layer = params.get("layer")
+    userid = params.get("userid")
+    try:
+        json = getLayer(userid,layer)
+    except FileNotFoundError as e:
+        print("/getLayer/"+query,params)
+        print(e)
+        abort(400)
+
+    data = json
+    props = query.split("/")
+    for prop in props:
+        if len(prop) is 0:
+            continue
+        if prop.isdigit():
+            prop = int(prop)
+        data = data[prop]
+    return {"data": data}
+
+@app.route("/addLayerData/<path:query>")
+def addLayerData(query):
+    params = request.json
+    userid = params.get("userid")
+    data = params.get("data")
+    layername, *props = query.split("/")
+
+    try:
+        changeLayer(userid,layername,props,data)
+    except Exception as e:
+        print("/addLayerData/"+query,params)
+        print(e)
+        abort(400)
+
+    return "success"
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0")
