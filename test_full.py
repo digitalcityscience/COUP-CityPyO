@@ -89,7 +89,7 @@ def test_layerdata():
 def test_layerchange_nonexistant():
     query = "nonexistant_layer/features/0/id"
     data = {
-        "userid":"e3b205abbda908571fa09d99bac58ef9",
+        "userid":getUserId("testuser"),
         "data" : -1
         }
     response = requests.post(root_url+"addLayerData/"+query,json=data)
@@ -117,7 +117,7 @@ def test_layerchange_add2():
 def test_layerchange_all():
     query = "test_layer/"
     data = {
-        "userid":"e3b205abbda908571fa09d99bac58ef9",
+        "userid":getUserId("testuser"),
         "data" : {"data": [{"state": 0}, {"state": 2}, {"state": 4}]}
         }
     response = requests.post(root_url+"addLayerData/"+query,json=data)
@@ -168,5 +168,8 @@ if __name__ == "__main__":
         filepath="data/user/"+getUserId("testuser")+"/hashes.json"
         if os.path.exists(filepath):
             os.remove(filepath)
+        filepath="data/user/"+getUserId("testuser")
+        if os.path.exists(filepath):
+            os.rmdir(filepath)
         print("deleting test user","testuser")
         deleteUser(getUserId("testuser"))
