@@ -107,6 +107,8 @@ def addLayer(userid,layername,data):
         os.makedirs(filepath)
     filepath += layername
     filepath += ".json"
+    if os.path.exists(filepath):
+        raise ValueError("layer already exists!")
     with open(filepath, "w") as layerfile:
         json.dump(data, layerfile)
 
@@ -121,6 +123,25 @@ def recurse_change(json, query_list, new_data):
     else:
         json[prop] = recurse_change(json[prop],query_list,new_data)
         return json
+
+def update_hash(userid, layername):
+    if layername != "hashes":
+        filepath = "data/user/"
+        filepath += userid 
+        filepath += "/"
+        filepath += "hashes"
+        filepath += ".json"
+        if os.path.isfile(filepath):
+            # hashes layer exists
+            changeLayer(userid,"hashes", [layername], hash_state(userid, layername))
+        else:
+            # hashes layer does not exist yet
+            addLayer(userid,"hashes", {layername : hash_state(userid, layername)})
+
+def hash_state(userid, layername):
+    data_state = getLayer(userid, layername)
+    json_string = json.dumps(data_state)
+    return hash(json_string)
 
 def changeLayer(userid,layername,query,data):
     filepath = "data/user/"
@@ -154,4 +175,5 @@ def changeLayer(userid,layername,query,data):
         if len(query) > 0:
             raise ValueError("can't update non-existant layer!"+layername)
         addLayer(userid,layername,data)
-    
+
+    update_hash(userid, layername)
