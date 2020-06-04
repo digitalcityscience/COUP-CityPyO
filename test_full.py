@@ -1,4 +1,6 @@
 import requests
+from database_connector import deleteUser,getUserId
+import os
 
 root_url = "http://127.0.0.1:5000/"
 
@@ -37,18 +39,14 @@ def test_login_neg_user():
     assert(response.status_code == 401)
 
 def test_register_pos():
-    username = "neuer_user"
-    password = "neues_passwort"
+    username = "testuser"
+    password = "blubb"
     data = {
         "username":username,
         "password":password
         }
     response = requests.post(root_url+"register",json=data)
     assert(response.status_code == 200)
-
-    from database_connector import deleteUser
-    print("deleting test entry",response.json())
-    deleteUser(response.json()["user_id"])
 
 def test_register_neg():
     username = "testuser"
@@ -60,10 +58,19 @@ def test_register_neg():
     response = requests.post(root_url+"register",json=data)
     assert(response.status_code == 403)
 
+def test_layerchange_add_new():
+    query = "test_layer"
+    data = {
+        "userid":getUserId("testuser"),
+        "data" : {"type": "FeatureCollection","features": [{ "type": "Feature", "id":0 }]}
+        }
+    response = requests.post(root_url+"addLayerData/"+query,json=data)
+    assert(response.status_code == 200)
+
 def test_layer():
     data = {
-        "userid":"e3b205abbda908571fa09d99bac58ef9",
-        "layer":"features_buildings"
+        "userid":getUserId("testuser"),
+        "layer":"test_layer"
         }
     response = requests.get(root_url+"getLayer",json=data)
     assert(response.status_code == 200)
@@ -72,8 +79,8 @@ def test_layer():
 def test_layerdata():
     query = "features/0/id"
     data = {
-        "userid":"e3b205abbda908571fa09d99bac58ef9",
-        "layer":"features_buildings"
+        "userid":getUserId("testuser"),
+        "layer":"test_layer"
         }
     response = requests.get(root_url+"getLayer/"+query,json=data)
     assert(response.status_code == 200)
@@ -90,9 +97,9 @@ def test_layerchange_nonexistant():
 
 def test_layerchange_add():
     import random
-    query = "test_layer/data/1/state"
+    query = "test_layer2/data/1/state"
     data = {
-        "userid":"e3b205abbda908571fa09d99bac58ef9",
+        "userid":getUserId("testuser"),
         "data" : {"somedata":random.randint(0,1000)}
         }
     response = requests.post(root_url+"addLayerData/"+query,json=data)
@@ -101,13 +108,11 @@ def test_layerchange_add():
 def test_layerchange_add2():
     query = "test_layer2/"
     data = {
-        "userid":"e3b205abbda908571fa09d99bac58ef9",
-        "data" : {"somedata":1337}
+        "userid":getUserId("testuser"),
+        "data" : {"data": [{"state": 0}, {"state": 2}, {"state": 4}]}
         }
     response = requests.post(root_url+"addLayerData/"+query,json=data)
     assert(response.status_code == 200)
-    import os
-    os.remove("data/user/e3b205abbda908571fa09d99bac58ef9/test_layer2.json")
 
 def test_layerchange_all():
     query = "test_layer/"
@@ -119,28 +124,49 @@ def test_layerchange_all():
     assert(response.status_code == 200)
 
 if __name__ == "__main__":
-    print("test_life")
-    test_life()
-    print("test_login_pos")
-    test_login_pos()
-    print("test_login_neg_pw")
-    test_login_neg_pw()
-    print("test_login_neg_user")
-    test_login_neg_user()
-    print("test_register_pos")
-    test_register_pos()
-    print("test_register_neg")
-    test_register_neg()
+    try:
+        print("test_life")
+        test_life()
+        print("test_register_pos")
+        test_register_pos()
+        print("test_login_pos")
+        test_login_pos()
+        print("test_login_neg_pw")
+        test_login_neg_pw()
+        print("test_login_neg_user")
+        test_login_neg_user()
+        print("test_register_neg")
+        test_register_neg()
 
-    print("test_layer")
-    test_layer()
-    print("test_layerdata")
-    test_layerdata()
-    print("test_layerchange_nonexistant")
-    test_layerchange_nonexistant()
-    print("test_layerchange_add")
-    test_layerchange_add()
-    print("test_layerchange_add2")
-    test_layerchange_add2()
-    print("test_layerchange_all")
-    test_layerchange_all()
+        print("test_layerchange_add_new")
+        test_layerchange_add_new()
+        print("test_layer")
+        test_layer()
+        print("test_layerdata")
+        test_layerdata()
+        print("test_layerchange_nonexistant")
+        test_layerchange_nonexistant()
+        print("test_layerchange_add2")
+        test_layerchange_add2()
+        print("test_layerchange_add")
+        test_layerchange_add()
+        print("test_layerchange_all")
+        test_layerchange_all()
+    except AssertionError as e:
+        print("^^^^ Failed here ^^^^\n")
+        raise e
+    else:
+        print("\nALL TESTS SUCCESSFULL!\n")
+    finally:
+        print("deleting test layers")
+        filepath="data/user/"+getUserId("testuser")+"/test_layer.json"
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        filepath="data/user/"+getUserId("testuser")+"/test_layer2.json"
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        filepath="data/user/"+getUserId("testuser")+"/hashes.json"
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        print("deleting test user","testuser")
+        deleteUser(getUserId("testuser"))
