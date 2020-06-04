@@ -40,18 +40,11 @@ def makeUser(username, password):
     with open(user_db_file) as jsonfile:
         jsondata = json.load(jsonfile)
 
-    if jsondata == {}:
-        raise EOFError
-
     userid = generateID()
     while(checkUser(userid)): # id already exists (what a chance!)
         userid = generateID() # generate a new one
         
-    jsondata[userid] = {"username": username, "passwort": password }
-
-    
-    if jsondata == {}:
-        raise EOFError
+    jsondata[userid] = {"username": username, "password": password }
 
     with open(user_db_file, "w") as jsonfile:
         json.dump(jsondata, jsonfile)
