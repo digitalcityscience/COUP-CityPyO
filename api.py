@@ -63,8 +63,8 @@ def register():
 def index():
     return "Hi :)"
 
-@app.route("/getLayer")
-@app.route("/getLayer/")
+@app.route("/getLayer", methods = ['GET'])
+@app.route("/getLayer/", methods = ['GET'])
 def getLayerRoute():
     params = request.json
     layer = params.get("layer")
@@ -76,7 +76,7 @@ def getLayerRoute():
         print(e)
         abort(400)
         
-@app.route("/getLayer/<path:query>")
+@app.route("/getLayer/<path:query>", methods = ['GET'])
 def getLayerData(query):
     params = request.json
     layer = params.get("layer")
@@ -98,7 +98,7 @@ def getLayerData(query):
         data = data[prop]
     return {"data": data}
 
-@app.route("/addLayerData/<path:query>")
+@app.route("/addLayerData/<path:query>", methods = ['POST'])
 def addLayerData(query):
     params = request.json
     userid = params.get("userid")

@@ -85,7 +85,7 @@ def layerchange_nonexistant_test():
         "userid":"e3b205abbda908571fa09d99bac58ef9",
         "data" : -1
         }
-    response = requests.get(root_url+"addLayerData/"+query,json=data)
+    response = requests.post(root_url+"addLayerData/"+query,json=data)
     assert(response.status_code == 400)
 
 def layerchange_add_test():
@@ -95,7 +95,7 @@ def layerchange_add_test():
         "userid":"e3b205abbda908571fa09d99bac58ef9",
         "data" : {"somedata":random.randint(0,1000)}
         }
-    response = requests.get(root_url+"addLayerData/"+query,json=data)
+    response = requests.post(root_url+"addLayerData/"+query,json=data)
     assert(response.status_code == 200)
 
 def layerchange_add_test2():
@@ -104,7 +104,7 @@ def layerchange_add_test2():
         "userid":"e3b205abbda908571fa09d99bac58ef9",
         "data" : {"somedata":1337}
         }
-    response = requests.get(root_url+"addLayerData/"+query,json=data)
+    response = requests.post(root_url+"addLayerData/"+query,json=data)
     assert(response.status_code == 200)
     import os
     os.remove("data/user/e3b205abbda908571fa09d99bac58ef9/test_layer2.json")
@@ -115,7 +115,7 @@ def layerchange_all_test():
         "userid":"e3b205abbda908571fa09d99bac58ef9",
         "data" : {"data": [{"state": 0}, {"state": 2}, {"state": 4}]}
         }
-    response = requests.get(root_url+"addLayerData/"+query,json=data)
+    response = requests.post(root_url+"addLayerData/"+query,json=data)
     assert(response.status_code == 200)
 
 if __name__ == "__main__":
