@@ -1,5 +1,5 @@
 from flask import Flask, request, abort
-from database_connector import makeUser,checkPass,getUserId,getLayer,changeLayer
+from database_connector import makeUser,checkPass,getUserId,getLayer,changeLayer,checkUser
 
 app = Flask(__name__)
 
@@ -21,6 +21,10 @@ def parseReq(request):
         return params
     else:
         return {}
+
+@app.route('/')
+def index():
+    return "Hi :)"
 
 @app.route('/test')
 def test():
@@ -59,16 +63,16 @@ def register():
 
     return { "user_id": userid }
 
-@app.route('/')
-def index():
-    return "Hi :)"
-
 @app.route("/getLayer", methods = ['GET'])
 @app.route("/getLayer/", methods = ['GET'])
 def getLayerRoute():
     params = request.json
     layer = params.get("layer")
     userid = params.get("userid")
+
+    if not checkUser(userid):
+        abort(401)
+
     try:
         return getLayer(userid,layer)
     except FileNotFoundError as e:
@@ -81,6 +85,10 @@ def getLayerData(query):
     params = request.json
     layer = params.get("layer")
     userid = params.get("userid")
+    
+    if not checkUser(userid):
+        abort(401)
+
     try:
         json = getLayer(userid,layer)
     except FileNotFoundError as e:
@@ -104,6 +112,9 @@ def addLayerData(query):
     userid = params.get("userid")
     data = params.get("data")
     layername, *props = query.split("/")
+
+    if not checkUser(userid):
+        abort(401)
 
     try:
         changeLayer(userid,layername,props,data)

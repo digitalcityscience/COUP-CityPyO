@@ -103,7 +103,7 @@ def test_layerchange_add2():
         }
     response = requests.post(root_url+"addLayerData/"+query,json=data)
     assert(response.status_code == 200)
-    
+
 def test_layerchange_add():
     import random
     query = "test_layer2/data/1/state"
@@ -122,6 +122,33 @@ def test_layerchange_all():
         }
     response = requests.post(root_url+"addLayerData/"+query,json=data)
     assert(response.status_code == 200)
+
+def test_nouser():
+    query = "test_layer"
+    data = {
+        "userid":"189637",
+        "data" : -1
+        }
+    response = requests.post(root_url+"addLayerData/"+query,json=data)
+    assert(response.status_code == 401)
+
+
+def cleanup():
+    print("deleting test layers")
+    filepath="data/user/"+getUserId("testuser")+"/test_layer.json"
+    if os.path.exists(filepath):
+        os.remove(filepath)
+    filepath="data/user/"+getUserId("testuser")+"/test_layer2.json"
+    if os.path.exists(filepath):
+        os.remove(filepath)
+    filepath="data/user/"+getUserId("testuser")+"/hashes.json"
+    if os.path.exists(filepath):
+        os.remove(filepath)
+    filepath="data/user/"+getUserId("testuser")
+    if os.path.exists(filepath):
+        os.rmdir(filepath)
+    print("deleting test user","testuser")
+    deleteUser(getUserId("testuser"))
 
 if __name__ == "__main__":
     try:
@@ -152,24 +179,12 @@ if __name__ == "__main__":
         test_layerchange_add()
         print("test_layerchange_all")
         test_layerchange_all()
+        print("test_nouser")
+        test_nouser()
     except AssertionError as e:
         print("^^^^ Failed here ^^^^\n")
         raise e
     else:
         print("\nALL TESTS SUCCESSFULL!\n")
     finally:
-        print("deleting test layers")
-        filepath="data/user/"+getUserId("testuser")+"/test_layer.json"
-        if os.path.exists(filepath):
-            os.remove(filepath)
-        filepath="data/user/"+getUserId("testuser")+"/test_layer2.json"
-        if os.path.exists(filepath):
-            os.remove(filepath)
-        filepath="data/user/"+getUserId("testuser")+"/hashes.json"
-        if os.path.exists(filepath):
-            os.remove(filepath)
-        filepath="data/user/"+getUserId("testuser")
-        if os.path.exists(filepath):
-            os.rmdir(filepath)
-        print("deleting test user","testuser")
-        deleteUser(getUserId("testuser"))
+        cleanup()
