@@ -57,7 +57,7 @@ def register():
     if username == "":
         abort(400)
     try:
-        userid = str(makeUser(username,password))
+        userid = str(makeUser(username, password))
     except ValueError:
         abort(403) # username already exists
 
@@ -74,9 +74,9 @@ def getLayerRoute():
         abort(401)
 
     try:
-        return getLayer(userid,layer)
+        return getLayer(userid, layer)
     except FileNotFoundError as e:
-        print("/getLayer",params)
+        print("/getLayer", params)
         print(e)
         abort(400)
         
@@ -90,9 +90,9 @@ def getLayerData(query):
         abort(401)
 
     try:
-        json = getLayer(userid,layer)
+        json = getLayer(userid, layer)
     except FileNotFoundError as e:
-        print("/getLayer/"+query,params)
+        print("/getLayer/" + query, params)
         print(e)
         abort(400)
 
@@ -117,9 +117,9 @@ def addLayerData(query):
         abort(401)
 
     try:
-        changeLayer(userid,layername,props,data)
+        changeLayer(userid, layername, props, data)
     except Exception as e:
-        print("/addLayerData/"+query,params)
+        print("/addLayerData/" + query, params)
         print(e)
         abort(400)
 
