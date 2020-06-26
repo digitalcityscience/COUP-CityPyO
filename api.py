@@ -1,7 +1,10 @@
 from flask import Flask, request, abort
+from flask_cors import CORS
 from database_connector import makeUser,checkPass,getUserId,getLayer,changeLayer,checkUser
 
 app = Flask(__name__)
+CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 def parseReq(request):
     if request.method == 'POST':
@@ -63,9 +66,10 @@ def register():
 
     return { "user_id": userid }
 
-@app.route("/getLayer", methods = ['GET'])
-@app.route("/getLayer/", methods = ['GET'])
+@app.route("/getLayer", methods = ['POST', 'GET'])
+# @app.route("/getLayer/", methods = ['POST'])
 def getLayerRoute():
+    print(request)
     params = request.json
     layer = params.get("layer")
     userid = params.get("userid")
@@ -80,7 +84,7 @@ def getLayerRoute():
         print(e)
         abort(400)
         
-@app.route("/getLayer/<path:query>", methods = ['GET'])
+@app.route("/getLayer/<path:query>", methods = ['POST'])
 def getLayerData(query):
     params = request.json
     layer = params.get("layer")
