@@ -1,5 +1,5 @@
 # DATA
-
+data/users.json
 data/*/*.json
 data/*/*/
 

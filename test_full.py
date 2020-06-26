@@ -82,7 +82,7 @@ def test_layerdata():
         "userid":getUserId("testuser"),
         "layer":"test_layer"
         }
-    response = requests.get(root_url+"getLayer/"+query,json=data)
+    response = requests.post(root_url+"getLayer/"+query,json=data)
     assert(response.status_code == 200)
     print(response.text)
 
