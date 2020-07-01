@@ -89,7 +89,8 @@ def getLayerData(query):
     params = request.json
     layer = params.get("layer")
     userid = params.get("userid")
-    
+    result_props = params.get("result_properties")  # todo: only works while request is post
+
     if not checkUser(userid):
         abort(401)
 
@@ -101,13 +102,28 @@ def getLayerData(query):
         abort(400)
 
     data = json
-    props = query.split("/")
-    for prop in props:
+
+    # get right subdata-set of layer by path query
+    query_prop = query.split("/")  # take the route first then json props
+    for prop in query_prop:
         if len(prop) == 0:
             continue
         if prop.isdigit():
             prop = int(prop)
         data = data[prop]
+
+    # get a sorted list of result properties, if specified
+    # concat result properties and use as key to filter right result set from data
+    if result_props:
+        result_props = sorted(result_props)
+        result_prop = ''
+        for prop in result_props:
+            result_prop += prop
+            result_prop += '_'
+        result_prop = result_prop[:-1]
+
+        data = data[result_prop]
+
     return {"data": data}
 
 @app.route("/addLayerData/<path:query>", methods = ['POST'])

@@ -76,15 +76,31 @@ def test_layer():
     assert(response.status_code == 200)
     print(response.json()["type"])
 
-def test_layerdata():
+def test_get_layerdata():
     query = "features/0/id"
     data = {
         "userid":getUserId("testuser"),
         "layer":"test_layer"
         }
+
     response = requests.post(root_url+"getLayer/"+query,json=data)
+
     assert(response.status_code == 200)
     print(response.text)
+
+
+def test_get_layerdata_with_result_properties():
+    query = "scenario1"
+    data = {
+        "userid": getUserId("testuser"),
+        "layer": "abm",
+        "result_properties": ["prop1", "prop2"]
+        }
+
+    response = requests.post(root_url+"getLayer/"+query,json=data)
+    print(response.text)
+    assert(response.status_code == 200)
+
 
 def test_layerchange_nonexistant():
     query = "nonexistant_layer/features/0/id"
@@ -170,7 +186,9 @@ if __name__ == "__main__":
         print("test_layer")
         test_layer()
         print("test_layerdata")
-        test_layerdata()
+        test_get_layerdata()
+        print("test layerdata with specific property")
+        test_get_layerdata_with_result_properties()
         print("test_layerchange_nonexistant")
         test_layerchange_nonexistant()
         print("test_layerchange_add2")
