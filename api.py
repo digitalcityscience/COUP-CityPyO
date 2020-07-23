@@ -115,16 +115,15 @@ def getLayerData(query):
     # get a sorted list of result properties, if specified
     # concat result properties and use as key to filter right result set from data
     if result_props:
-        result_props = sorted(result_props)
-        result_prop = ''
-        for prop in result_props:
-            result_prop += prop
-            result_prop += '_'
-        result_prop = result_prop[:-1]
+        for result_set in data:
+            if data[result_set]["result_props"] == result_props:
+                data = data[result_set]
+                return {"data": data}
 
-        data = data[result_prop]
+        abort(400)
+    else:
+        return {"data": data}
 
-    return {"data": data}
 
 @app.route("/addLayerData/<path:query>", methods = ['POST'])
 def addLayerData(query):
