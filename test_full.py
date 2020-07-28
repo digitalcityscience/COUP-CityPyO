@@ -89,15 +89,24 @@ def test_get_layerdata():
     print(response.text)
 
 
-def test_get_layerdata_with_result_properties():
-    query = "scenario1"
+def test_abm_request():
+    query = "abmScenario"
     data = {
         "userid": getUserId("testuser"),
-        "layer": "abm",
-        "result_properties": ["prop1", "prop2"]
+        "scenario_properties": {
+            "bridge_1": True,
+            "amenities_roof": "random",
+            "blocks": "open",
+            "bridge_2": False,
+            "paths": "vertical"
+        },
+        "agent_filters": {
+            "age": "18-35",
+            "mode": "public_transport_other"
         }
+    }
 
-    response = requests.post(root_url+"getLayer/"+query,json=data)
+    response = requests.post(root_url+"getLayer/"+query, json=data)
     print(response.text)
     assert(response.status_code == 200)
 
@@ -187,8 +196,8 @@ if __name__ == "__main__":
         test_layer()
         print("test_layerdata")
         test_get_layerdata()
-        print("test layerdata with specific property")
-        test_get_layerdata_with_result_properties()
+        print("test abm request")
+        test_abm_request()
         print("test_layerchange_nonexistant")
         test_layerchange_nonexistant()
         print("test_layerchange_add2")

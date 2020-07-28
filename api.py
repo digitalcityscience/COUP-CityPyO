@@ -89,40 +89,81 @@ def getLayerData(query):
     params = request.json
     layer = params.get("layer")
     userid = params.get("userid")
-    result_props = params.get("result_properties")  # todo: only works while request is post
 
     if not checkUser(userid):
         abort(401)
 
+    if query == "abmScenario":
+        return getAbmData(query)
+    else:
+        try:
+            json = getLayer(userid, layer)
+        except FileNotFoundError as e:
+            print("/getLayer/" + query, params)
+            print(e)
+            abort(400)
+
+        data = json
+        props = query.split("/")
+        for prop in props:
+            if len(prop) == 0:
+                continue
+            if prop.isdigit():
+                prop = int(prop)
+            data = data[prop]
+
+        return {"data": data}
+
+
+def getAbmData(query):
+    params = request.json
+    userid = params.get("userid")
+    requested_scenario_props = params.get("scenario_properties")  # todo: only works while request is post
+    agent_filters = params.get("agent_filters")  # todo: only works while request is post
+
     try:
-        json = getLayer(userid, layer)
+        scenario_list = getLayer(userid, "abmScenarios")
     except FileNotFoundError as e:
         print("/getLayer/" + query, params)
         print(e)
         abort(400)
 
-    data = json
+    abm_result = None
+    print(requested_scenario_props)
+    for scenario_name, scenario_props in scenario_list.items():
+        print(scenario_name, scenario_props)
+        if scenario_props == requested_scenario_props:
+            try:
+                abm_result = getLayer(userid, scenario_name, "abm")
+            except FileNotFoundError as e:
+                print("/getLayer/" + query, params)
+                print(e)
+                abort(404)
 
-    # get right subdata-set of layer by path query
-    query_prop = query.split("/")  # take the route first then json props
-    for prop in query_prop:
-        if len(prop) == 0:
-            continue
-        if prop.isdigit():
-            prop = int(prop)
-        data = data[prop]
+    if not abm_result:
+        print("no abm result found")
+        abort(404)  # no matching result found
 
-    # get a sorted list of result properties, if specified
-    # concat result properties and use as key to filter right result set from data
-    if result_props:
-        for result_set in data:
-            if data[result_set]["result_props"] == result_props:
-                data = data[result_set]
-                return {"data": data}
+    if agent_filters:
+        relevant_agents_data = []
+        for agent_data in abm_result["data"]:
+            relevant_agent = True
+            for key, value in agent_filters.items():
+                try:
+                    if not agent_data["agent"][key] == value:
+                        relevant_agent = False
+                        break
+                except Exception as e:
+                    print("filter criteria does not match target data")
+                    print(e)
+                    abort(400)
+            if relevant_agent:
+                relevant_agents_data.append(agent_data)
 
-        abort(400)
-    else:
-        return {"data": data}
+        return {"data": relevant_agents_data}
+
+    else:  # return the entire result dataset, if no filters applied
+        return {"data": abm_result["data"]}
 
 
 @app.route("/addLayerData/<path:query>", methods = ['POST'])

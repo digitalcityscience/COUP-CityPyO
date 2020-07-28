@@ -74,9 +74,12 @@ def deleteUser(userid):
     with open(user_db_file, "w") as jsonfile:
         json.dump(jsondata, jsonfile)
 
-def getLayer(userid, layername):
+
+def getLayer(userid, layername, dirname=None):
     # try globals first
     filepath = "data/global/"
+    if dirname:
+        filepath += dirname +'/'
     filepath += layername
     filepath += ".json"
 
