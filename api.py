@@ -120,6 +120,7 @@ def getAbmData(query):
     userid = params.get("userid")
     requested_scenario_props = params.get("scenario_properties")  # todo: only works while request is post
     agent_filters = params.get("agent_filters")  # todo: only works while request is post
+    time_filters = params.get("time_filters")  # todo: only works while request is post
 
     try:
         scenario_list = getLayer(userid, "abmScenarios")
@@ -129,7 +130,6 @@ def getAbmData(query):
         abort(400)
 
     abm_result = None
-    print(requested_scenario_props)
     for scenario_name, scenario_props in scenario_list.items():
         print(scenario_name, scenario_props)
         if scenario_props == requested_scenario_props:
@@ -144,13 +144,20 @@ def getAbmData(query):
         print("no abm result found")
         abort(404)  # no matching result found
 
+    if time_filters:
+        start_time = time_filters["start_time"]
+        end_time = time_filters["end_time"]
+        for agent_data in abm_result["data"]:
+            agent_data["timestamps"] = list(filter(lambda x: start_time < x < end_time, agent_data["timestamps"]))
+        abm_result["data"] = list(filter(lambda agent: agent["timestamps"], abm_result["data"]))
+
     if agent_filters:
         relevant_agents_data = []
         for agent_data in abm_result["data"]:
             relevant_agent = True
             for key, value in agent_filters.items():
                 try:
-                    if not agent_data["agent"][key] == value:
+                    if not agent_data["agent"][key] in [value, "unknown"]:  # matching value or "unknown" is relevant
                         relevant_agent = False
                         break
                 except Exception as e:

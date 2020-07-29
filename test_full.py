@@ -91,24 +91,36 @@ def test_get_layerdata():
 
 def test_abm_request():
     query = "abmScenario"
-    data = {
+    data_without_time_filter = {
         "userid": getUserId("testuser"),
         "scenario_properties": {
             "bridge_1": True,
             "amenities_roof": "random",
             "blocks": "open",
             "bridge_2": False,
-            "paths": "vertical"
+            "main_street_orientation": "vertical"
         },
         "agent_filters": {
-            "age": "18-35",
-            "mode": "public_transport_other"
+            "mode": "foot",
+            "student_or_adult": "adult",
+            "resident_or_visitor": "resident"
         }
     }
 
-    response = requests.post(root_url+"getLayer/"+query, json=data)
-    print(response.text)
-    assert(response.status_code == 200)
+    data_with_time_filter = data_without_time_filter.copy()
+    data_with_time_filter["time_filters"] = {
+            "start_time": 10000.0,
+            "end_time": 14000.0
+        }
+
+    response_with_time_filter = requests.post(root_url+"getLayer/"+query, json=data_with_time_filter)
+    response_without_time_filter = requests.post(root_url+"getLayer/"+query, json=data_without_time_filter)
+
+
+    assert(response_with_time_filter.status_code == 200)
+    assert(response_without_time_filter.status_code == 200)
+    print(len(response_without_time_filter.json()["data"]) , len(response_with_time_filter.json()["data"]))
+    assert(len(response_without_time_filter.json()["data"]) > len(response_with_time_filter.json()["data"]))
 
 
 def test_layerchange_nonexistant():
@@ -189,7 +201,6 @@ if __name__ == "__main__":
         test_login_neg_user()
         print("test_register_neg")
         test_register_neg()
-
         print("test_layerchange_add_new")
         test_layerchange_add_new()
         print("test_layer")
