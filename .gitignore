@@ -1,3 +1,7 @@
+# IDEs
+.idea
+.vscode
+
 # DATA
 data/users.json
 data/*/*.json
