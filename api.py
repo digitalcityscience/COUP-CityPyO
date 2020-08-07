@@ -155,9 +155,14 @@ def getAbmData(query):
         relevant_agents_data = []
         for agent_data in abm_result["data"]:
             relevant_agent = True
+
             for key, value in agent_filters.items():
                 try:
-                    if not agent_data["agent"][key] in [value, "unknown"]:  # matching value or "unknown" is relevant
+                    if key == "modes":  # modes contains dict of allowed transport modes {"bicycle":true, "car":false}
+                        if not value[agent_data["agent"]["mode"]]:
+                            relevant_agent = False
+                            break
+                    elif not agent_data["agent"][key] in [value, "unknown"]:  # matching value or "unknown" is relevant
                         relevant_agent = False
                         break
                 except Exception as e:
