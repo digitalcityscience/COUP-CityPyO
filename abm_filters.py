@@ -32,9 +32,13 @@ def apply_agent_filters(abm_result, agent_filters):
                     if not value[agent_data["agent"]["mode"]]:
                         relevant_agent = False
                         break
-                elif not agent_data["agent"][key] in [value, "unknown"]:  # matching value or "unknown" is relevant
-                    relevant_agent = False
-                    break
+
+                else:
+                    if value == "any":  # any values for this key are excepted
+                        continue
+                    if not agent_data["agent"][key] in [value, "unknown"]:  # matching value or "unknown" is relevant
+                        relevant_agent = False
+                        break
             except Exception as e:
                 print("filter criteria does not match target data")
                 print(e)
@@ -46,7 +50,7 @@ def apply_agent_filters(abm_result, agent_filters):
 
 
 def agents_to_be_filtered(agent_filters) -> bool:
-    if agent_filters != all_agents_setting:
+    if agent_filters == all_agents_setting:
         return False
 
     return True
