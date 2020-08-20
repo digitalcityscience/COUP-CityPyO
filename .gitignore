@@ -2,11 +2,6 @@
 .idea
 .vscode
 
-# DATA
-data/users.json
-data/*/*.json
-data/*/*/
-
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
