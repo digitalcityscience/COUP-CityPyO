@@ -1,11 +1,12 @@
 from flask import Flask, request, abort
 from flask_cors import CORS
-from database_connector import makeUser,checkPass,getUserId,getLayer,changeLayer,checkUser
+from database_connector import makeUser, checkPass, getUserId, getLayer, changeLayer, checkUser
 from abm_filters import apply_time_filters, apply_agent_filters
 
 app = Flask(__name__)
 CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
+
 
 def parseReq(request):
     if request.method == 'POST':
@@ -15,27 +16,30 @@ def parseReq(request):
         for key in request.args.keys():
             # we have to parse this element by element, to detect duplicate keys
             if len(request.args.getlist(key)) > 1:
-                params[key] = request.args.getlist(key) # duplicate key, store all values as list
+                params[key] = request.args.getlist(key)  # duplicate key, store all values as list
             else:
-                params[key] = request.args[key] # default behaviour: store single value
+                params[key] = request.args[key]  # default behaviour: store single value
     else:
         abort(400)
-    
+
     if params and len(params.items()) > 0:
         return params
     else:
         return {}
 
+
 @app.route('/')
 def index():
     return "Hi :)"
+
 
 @app.route('/test')
 def test():
     params = parseReq(request)
     return params
 
-@app.route('/login', methods = ['POST'])
+
+@app.route('/login', methods=['POST'])
 def login():
     params = parseReq(request)
     if not params:
@@ -49,11 +53,12 @@ def login():
         if not checkPass(userid, password):
             abort(401)
     except ValueError:
-            abort(401)
+        abort(401)
 
-    return { "user_id": userid }
+    return {"user_id": userid}
 
-@app.route('/register', methods = ['POST'])
+
+@app.route('/register', methods=['POST'])
 def register():
     params = parseReq(request)
     username = params.get('username')
@@ -63,11 +68,12 @@ def register():
     try:
         userid = str(makeUser(username, password))
     except ValueError:
-        abort(403) # username already exists
+        abort(403)  # username already exists
 
-    return { "user_id": userid }
+    return {"user_id": userid}
 
-@app.route("/getLayer", methods = ['POST', 'GET'])
+
+@app.route("/getLayer", methods=['POST', 'GET'])
 # @app.route("/getLayer/", methods = ['POST'])
 def getLayerRoute():
     print(request)
@@ -84,8 +90,9 @@ def getLayerRoute():
         print("/getLayer", params)
         print(e)
         abort(400)
-        
-@app.route("/getLayer/<path:query>", methods = ['POST'])
+
+
+@app.route("/getLayer/<path:query>", methods=['POST'])
 def getLayerData(query):
     params = request.json
     layer = params.get("layer")
@@ -154,7 +161,7 @@ def getAbmData(query):
     return {"data": abm_result["data"]}
 
 
-@app.route("/addLayerData/<path:query>", methods = ['POST'])
+@app.route("/addLayerData/<path:query>", methods=['POST'])
 def addLayerData(query):
     params = request.json
     userid = params.get("userid")
@@ -172,6 +179,7 @@ def addLayerData(query):
         abort(400)
 
     return "success"
+
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0")
