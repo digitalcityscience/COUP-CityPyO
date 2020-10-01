@@ -1,6 +1,6 @@
 all_agents_setting = {
     "resident_or_visitor": "any",
-    "student_or_adult": "any",
+    "agent_age": ["0-6","7-17","18-35","36-60","61-100"],
     "modes": {
         "bicycle": True,
         "car": True,
@@ -32,7 +32,10 @@ def apply_agent_filters(abm_result, agent_filters):
                     if not value[agent_data["agent"]["mode"]]:
                         relevant_agent = False
                         break
-
+                elif key == "agent_age":  # agent_age contains an array of allowed ages e.g. ['0-6', '18-35']
+                    if not value[agent_data["agent"]["agent_age"]] in agent_filters["agent_age"]:
+                        relevant_agent = False
+                        break
                 else:
                     if value == "any":  # any values for this key are excepted
                         continue
