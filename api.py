@@ -3,6 +3,10 @@ from flask_cors import CORS
 from database_connector import makeUser, checkPass, getUserId, getLayer, changeLayer, checkUser
 from abm_filters import apply_time_filters, apply_agent_filters
 
+from table_parser import parse_table_state
+import os
+import json
+
 app = Flask(__name__)
 CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -71,6 +75,21 @@ def register():
         abort(403)  # username already exists
 
     return {"user_id": userid}
+
+
+@app.route("/updateTableData", methods=['POST'])
+def updateTableData():
+    params = request.json
+    table_state = params.get("table_state")
+
+    geojson = parse_table_state(table_state)
+
+    cwd = os.getcwd()
+
+    with open(cwd + "/data/global/" + "table.json", "w") as fp:
+        json.dump(geojson, fp)
+
+    return "success"
 
 
 @app.route("/getLayer", methods=['POST', 'GET'])
@@ -179,7 +198,6 @@ def addLayerData(query):
         abort(400)
 
     return "success"
-
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0")
