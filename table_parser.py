@@ -5,8 +5,29 @@ from shapely import affinity
 import pyproj
 
 marker_side_length = 3.2
-table_reference_point = Point(566983.28, 5932038.94)
 cwd = os.getcwd()
+
+# entire competition area
+#extend_north = 5932375.29501040372997522
+#extend_south = 5931094.97593854926526546
+#extend_west = 566523.05231103568803519
+#extend_east = 567293.41378647310193628
+
+# northern grasbrook penisula
+extend_north = 5932575.29501040372997522
+extend_south = 5931661
+extend_west = 566835
+extend_east = 567749
+
+#table_res = 2000  # px per direction # entire table
+table_res = 1000  # px per direction # 1 box
+
+
+table_reference_point = Point(extend_west, extend_south)
+
+table_scale_y = (extend_north - extend_south) / table_res
+table_scale_x = (extend_east - extend_west) / table_res
+
 
 
 def find_corner_point(feature):
@@ -72,15 +93,15 @@ def find_matching_building_for_marker(building_library, marker_key):
 def get_building_geometry(building, current_marker_centroid, rotatation):
     translated_coords = []
 
-    for coordinate in building["geometry"]["coordinates"][0][0]:
-        coordinate_x = (coordinate[0] + current_marker_centroid[0] - marker_side_length) + table_reference_point.x
-        coordinate_y = coordinate[1] + current_marker_centroid[1] - marker_side_length + table_reference_point.y
+    for coordinate in building["geometry"]["coordinates"][0]:
+        coordinate_x = table_scale_x * (coordinate[0] + current_marker_centroid[0] - marker_side_length) + table_reference_point.x
+        coordinate_y = table_scale_y * (coordinate[1] + current_marker_centroid[1] - marker_side_length) + table_reference_point.y
 
         translated_coords.append([coordinate_x, coordinate_y])
 
     building_first_corner = Point([
-        table_reference_point.x + current_marker_centroid[0] - marker_side_length,
-        table_reference_point.y + current_marker_centroid[1] - marker_side_length
+        table_reference_point.x + (current_marker_centroid[0] - marker_side_length) * table_scale_x,
+        table_reference_point.y + (current_marker_centroid[1] - marker_side_length) * table_scale_y
     ])
     building_poly = Polygon(translated_coords)
     building_poly = affinity.rotate(building_poly, rotatation, origin=building_first_corner, use_radians=True)
@@ -128,6 +149,8 @@ def parse_table_state(table_state):
 
     buildings_utm_features = []
 
+    print(table_scale_x, table_scale_y)
+
     # iterate over all markers in the table output
     for key, value in table_state.items():
         # 1 [[0, 65], -1.1839206090638685]
@@ -150,7 +173,7 @@ def parse_table_state(table_state):
             "geometry": geom,
             "properties": {
                 "land_use_detailed_type": "commercialOffice",
-                "height": 5.5,
+                "height": 16,
                 "element_id": 2528131.0,
                 "plot_id": 17.0,
                 "building_id": "Q1-17-02",
