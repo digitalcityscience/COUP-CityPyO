@@ -1,5 +1,8 @@
 # data
 data/
+data/global
+
+buildings_out_utm.json
 
 # IDEs
 .idea
