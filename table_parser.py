@@ -3,6 +3,16 @@ import os
 from shapely.geometry import Polygon, Point, mapping
 from shapely import affinity
 import pyproj
+import json
+
+# websocket
+import asyncio
+import websockets
+
+# http
+import requests
+from requests.auth import HTTPBasicAuth
+
 
 marker_side_length = 3.2
 cwd = os.getcwd()
@@ -144,8 +154,6 @@ def reproject_geojson_utm_to_geodesic(local_geojson):
 
 def parse_table_state(table_state):
 
-    with open(cwd + "/" + "buildings_library" + ".json", "r") as fg:
-        building_library = json.load(fg)
 
     buildings_utm_features = []
 
@@ -174,6 +182,7 @@ def parse_table_state(table_state):
             "properties": {
                 "land_use_detailed_type": "commercialOffice",
                 "height": 16,
+                "color": "#ff00ff",
                 "element_id": 2528131.0,
                 "plot_id": 17.0,
                 "building_id": "Q1-17-02",
@@ -190,30 +199,87 @@ def parse_table_state(table_state):
         "features": buildings_utm_features
     }
 
+    buildings_wgs_geojson = reproject_geojson_utm_to_geodesic(json.loads(json.dumps(buildings_utm_geojson)))
+    #buildings_wgs_geojson = buildings_utm_geojson
 
-    with open(cwd + "/" + "buildings_out_utm.json", "w") as fp:
-        json.dump(buildings_utm_geojson, fp)
-
-
-    with open(cwd + "/" + "buildings_out_utm" + ".json", "r") as t:
-        # json.parse(json.serialize) as a fix since all coordinates are immutable tuples in geom
-        buildings_utm_json = json.load(t)
-        buildings_wgs_geojson = reproject_geojson_utm_to_geodesic(buildings_utm_json)
-
+    with open(cwd + "/" + "lego_set_2.json", "w") as fp:
+        json.dump(buildings_wgs_geojson, fp)
 
     return buildings_wgs_geojson
 
-    with open(cwd + "/" + "buildings_out_wgs.json", "w") as fp:
-        json.dump(buildings_wgs_geojson, fp)
 
+
+def send_http_request(payload):
+    # post_address = 'https://nc.hcu-hamburg.de/cityPyo/updateTableData'
+    post_address = 'http://0.0.0.0:5000/updateTableData'
+
+    r = requests.post(post_address, auth=HTTPBasicAuth('grasbrooker', '%3gZabBC4g3Eu'), json=payload, headers={'Content-Type': 'application/json'})
+    print(r)
+
+    if not r.status_code == 200:
+        print("could not post result to cityPYO", post_address)
+        print("Error code", r.status_code)
+    else:
+        print("Successfully posted to cityPYO", post_address, r.status_code)
+
+
+def callWebSocket(uri, messageType, message):
+        asyncio.get_event_loop().run_until_complete(
+            sendSocketMessage(uri, messageType, message))
+
+async def sendSocketMessage(uri, messageType, message):
+        async with websockets.connect(uri) as websocket:
+            data = {messageType: message}
+            await websocket.send(json.dumps(data))
+
+def callWebSocketJson(uri, data):
+        asyncio.get_event_loop().run_until_complete(
+            sendSocketMessage(uri, data))
+
+async def sendJsonSocketMessage(uri, data):
+        async with websockets.connect(uri) as websocket:
+            await websocket.send(json.dumps(data))
 
 
 if __name__ == '__main__':
-    #produce_test_buildings()
+    import time
+
+    with open(cwd + "/" + "buildings_library" + ".json", "r") as fg:
+        building_library = json.load(fg)
+
+
+   # produce_test_buildings()
     with open(cwd + "/" + "table_output" + ".json", "r") as f:
         table_json = json.load(f)
 
-    parse_table_state(table_json)
+
+    for i in range(1,1000):
+        for building_id in range(1,4):
+            table_json[str(building_id)][0][0] += 10
+            table_json[str(building_id)][0][1] += 10
+            table_json[str(building_id)][1] += 0.5
+
+        geojson = parse_table_state(table_json)
+        start_time = time.time()
+
+
+        callWebSocket("ws://fierce-dawn-73363.herokuapp.com", 'detectedGeoJson', json.dumps(geojson))
+        end_time = time.time()
+
+        print("time")
+        print((end_time-start_time))
+
+
+    # while True:
+    #     for i in range(1,3):
+    #         with open(cwd + "/" + "lego_set_" + str(i) + ".json", "r") as f:
+    #             geojson = json.load(f)
+    #
+    #         callWebSocket("ws://fierce-dawn-73363.herokuapp.com", 'detectedGeoJson', json.dumps(geojson))
+
+
+
+
 
 
 
