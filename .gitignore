@@ -1,3 +1,6 @@
+# ignore user credentials
+user_credentials.json
+
 # data
 data/
 
