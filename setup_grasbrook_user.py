@@ -1,6 +1,5 @@
 import requests
 import os
-import getpass
 import zipfile
 import json
 import getpass
@@ -19,7 +18,7 @@ def get_cityPyo_user_credentials():
     with open('user_credentials.json', 'r') as f:
         user_creds = json.load(f)
 
-    return user_creds["user"], user_creds["password"]
+    return user_creds["username"], user_creds["password"]
 
 
 def register_grasbrook_user():
