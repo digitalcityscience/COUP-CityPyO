@@ -15,6 +15,16 @@ def getUserId(username):
     
     raise ValueError("User not present in DB!", username)
 
+
+def isUserRestricted(userid):
+
+    with open(user_db_file) as jsonfile:
+        jsondata = json.load(jsonfile)
+
+        return jsondata[userid]["restricted"]
+
+    return True
+
 def checkPass(userid, password):
     with open(user_db_file) as jsonfile:
         jsondata = json.load(jsonfile)
@@ -49,8 +59,9 @@ def makeUser(username, password):
     userid = generateID()
     while(checkUser(userid)): # id already exists (what a chance!)
         userid = generateID() # generate a new one
-        
-    jsondata[userid] = {"username": username, "password": password }
+
+    jsondata[userid] = {"username": username, "password": password, "restricted": True }
+
 
     with open(user_db_file, "w") as jsonfile:
         json.dump(jsondata, jsonfile)
@@ -74,18 +85,23 @@ def deleteUser(userid):
     with open(user_db_file, "w") as jsonfile:
         json.dump(jsondata, jsonfile)
 
-def getLayer(userid, layername):
-    # try globals first
-    filepath = "data/global/"
-    filepath += layername
-    filepath += ".json"
 
+def getLayer(userid, layername, dirname=None):
     import os.path
-    if os.path.isfile(filepath):
-        with open(filepath) as layerfile:
-            return json.load(layerfile)
-    
-    # try users layers insteads
+
+    # if not restricted, try globals first
+    if not isUserRestricted(userid):
+        filepath = "data/global/"
+        if dirname:
+            filepath += dirname +'/'
+        filepath += layername
+        filepath += ".json"
+
+        if os.path.isfile(filepath):
+            with open(filepath) as layerfile:
+                return json.load(layerfile)
+
+    # try users layers instead
     filepath = "data/user/"
     filepath += userid 
     filepath += "/"
