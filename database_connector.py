@@ -148,7 +148,7 @@ def update_hash(userid, layername):
         filepath += ".json"
         if os.path.isfile(filepath):
             # hashes layer exists
-            changeLayer(userid,"hashes", [layername], hash_state(userid, layername))
+            changeLayer(userid, "hashes", [layername], hash_state(userid, layername))
         else:
             # hashes layer does not exist yet
             addLayer(userid,"hashes", {layername : hash_state(userid, layername)})
@@ -186,6 +186,7 @@ def changeLayer(userid,layername,query,data):
         with open(filepath, "w") as layerfile:
             json.dump(jsondata, layerfile)
     else:
+        print("layer does not exist")
         # layer does not exist yet
         if len(query) > 0:
             raise ValueError("can't update non-existant layer!"+layername)

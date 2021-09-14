@@ -9,6 +9,12 @@ from flask_cors import CORS, cross_origin
 from database_connector import makeUser, checkPass, getUserId, getLayer, changeLayer, checkUser, isUserRestricted
 from abm_filters import apply_time_filters, apply_agent_filters
 
+import time
+import requests
+from uuid import UUID, uuid4
+import re
+import asyncio
+
 
 app = Flask(__name__)
 CORS(app)
@@ -193,6 +199,22 @@ def getAbmData(query):
     return {"data": abm_result["data"], "scenario_name": scenario_name}
 
 
+@app.route("/save_redis_result/", methods=['POST'])
+def save_redis_result():
+    params = request.json
+
+    print("params received by save route %s " % params)
+    userid = params["userid"]
+    layername = params["layername"]
+    task = params["task"]
+    
+    save_result_for_calculation_task(userid, layername, task)
+
+    return "success"
+
+
+
+
 @app.route("/addLayerData/<path:query>", methods=['POST'])
 def addLayerData(query):
     params = request.json
@@ -210,7 +232,156 @@ def addLayerData(query):
         print(e)
         abort(400)
 
+    # trigger calculation for updated scenario and save results async
+    if "scenario" in layername:
+        try:
+            print("trigger calculation ", layername)
+            tasks_to_collect_results_for = trigger_calculation_for_scenario(userid, layername, data)
+            print("tasks_to_collect_results_for %s " % tasks_to_collect_results_for)
+            # TODO new route for this
+            headers = {
+            'Content-type': 'application/json',
+            }
+            for task in tasks_to_collect_results_for:
+                # todo post to cityPyo itself
+                payload = {
+                    "userid": userid,
+                    "layername": layername,
+                    "task": task,
+                }
+                requests.post('http://localhost:5000/save_redis_result/', headers=headers, data=json.dumps(payload))
+        except Exception as e:
+            return "something went wrong {}".format(e)
+
     return "success"
+
+# triggers a calculation in the computation services. returns tasks with result_uuids to collect results for.
+def trigger_calculation_for_scenario(userid, layername, data) -> list:
+
+    tasks_to_collect_results_for = []
+    service_for_calculation_module = get_calculation_service_for_layername(layername)
+    
+    headers = {
+        'Content-type': 'application/json',
+    }
+
+    print("this is the data obejct %s" % data)
+
+    # forward request to calculation service api
+    if service_for_calculation_module:
+        data["city_pyo_user"] = userid
+        print("forwarding these data %s to port %s " % (data, service_for_calculation_module))
+        
+        if "tasks" in list(data.keys()):  # trigger group task
+            # post to grouptasks -> get back group result
+            resp_json = requests.post('http://localhost:5003/grouptasks', headers=headers, data=json.dumps(data)).json()
+            #resp_json = requests.post('http://' + service_for_calculation_module + ':5000/' + 'grouptasks', headers=headers, data=json.dumps(data)).json()
+            
+            # collect result for each task<->taskId
+            for task_count, task in enumerate(data["tasks"]):
+                task["result_uuid"] = resp_json["taskIds"][task_count]
+                tasks_to_collect_results_for.append(task)
+        
+        else: # trigger single task        
+            # todo if not wind: can only process group tasks
+            if not service_for_calculation_module == "wind-api":
+                raise NotImplementedError("single tasks only accepted by wind right now")
+
+            resp_json = requests.post('http://' + 'localhost' + ':5003/' + 'windtask', headers=headers, data=json.dumps(data)).json()
+            #resp_json = requests.post('http://' + service_for_calculation_module + ':5000/' + 'windtask', headers=headers, data=json.dumps(data)).json()
+            task = data
+            task["result_uuid"] = resp_json["taskId"]
+            tasks_to_collect_results_for.append(task)
+        
+        return tasks_to_collect_results_for
+    
+    raise NotImplementedError("cannot find port for scenario ", layername)
+
+
+
+
+def save_result_for_calculation_task(userid, layername, task):
+    result = get_result_for_task(task["result_uuid"], layername)
+    print("result of calc task %s " % result)
+
+    # check if the result of this procsess is another grouptask id. ## this happens for wind
+    try:
+        grouptask_uuid = UUID(result)
+        # set result of sub_group_task as task result
+        print("getting sub group result")
+        result = collect_results_for_sub_group_task(str(grouptask_uuid), userid, layername, task["result_uuid"])
+    except:
+        #  otherwise finally save result to disk
+        pass
+
+    hash = task["hash"]
+    print("saving result :)")
+    changeLayer(userid, get_result_layer_name(layername, hash), [], result)
+    print("saved result :)")
+
+  
+# collects and returns the result of 1 task 
+def get_result_for_task(task_id, layername):
+    service = get_calculation_service_for_layername(layername)
+    task_succeeded = False
+    print("Listen for task-result. Result is the id of the GroupTask.")
+    while not task_succeeded:
+        response = requests.get('http://localhost:5003/tasks/{}'.format(task_id))
+        print("task result id %s" % task_id)
+        response_json = response.json()
+
+        #response_json = requests.get('http://' + service + ':5000/tasks/{}'.format(task_id)).json()
+        task_succeeded = response_json['taskSucceeded']
+        time.sleep(1)
+
+    return response_json["result"]
+    
+
+# returns results for group task
+def collect_results_for_sub_group_task(group_task_id, userid, layername, task_id) -> list:
+    service = get_calculation_service_for_layername(layername)
+
+    print("group taks id %s" % group_task_id)
+    are_results_completed = False
+    completed_tasks_count = 0
+    while not are_results_completed:
+        response_json = requests.get('http://localhost:5003/grouptasks/{}'.format(group_task_id)).json()
+        #response_json = requests.get('http://' + service + ':5000/tasks/{}'.format(task_id)).json()
+
+        are_results_completed = response_json['grouptaskProcessed']  # boolean
+        
+        if response_json["tasksCompleted"] > completed_tasks_count and not are_results_completed:
+            # update result layer, whenever a new result is coming in
+            # todo save with "completed" property
+            changeLayer(userid, get_result_layer_name(layername, hash), [], response_json["results"]) # results is array of all results
+
+        print("tasks completed: %s" % response_json["tasksCompleted"])
+        time.sleep(1)
+    
+
+    return response_json["results"]
+
+
+def get_result_layer_name(layername, hash) -> str:
+    result_layer_name = layername + "_" + hash
+    if layername.startswith('_scenario'):
+        result_layer_name = re.sub("\_scenario$", '', layername)
+
+    return result_layer_name 
+
+
+def get_calculation_service_for_layername(layername):
+    service_for_calculation_module = None
+
+    if "wind" in layername:
+        service_for_calculation_module = 'wind-api'  
+    if "water" in layername:
+        service_for_calculation_module = 'swimdock-api'
+    if "noise" in layername:
+        service_for_calculation_module = 'noise-api'
+
+    return service_for_calculation_module
+
 
 @app.route("/combineLayers", methods=['POST'])
 def combineLayersRoute():
