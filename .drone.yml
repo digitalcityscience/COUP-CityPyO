@@ -23,7 +23,7 @@ steps:
   image: quving/drone-rancher-cicd:latest
   settings:
     stamp: ${DRONE_COMMIT}
-    kubernetes_deployment: citypyo
+    kubernetes_deployment: citypyo-api
     kubernetes_namespace: ${DRONE_BRANCH}
     rancher_url:
       from_secret: rancher_url
