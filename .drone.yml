@@ -1,16 +1,14 @@
----
 kind: pipeline
-type: docker
-name: api
+name: pipeline
 steps:
 - name: build and publish
   image: plugins/docker
   settings:
     repo:
       from_secret: docker_repository
-    tags:
-      - citypyo-${DRONE_BRANCH}
-    dockerfile: Dockerfile
+    tags: ${DRONE_BRANCH}
+    registry:
+      from_secret: docker_registry
     username:
       from_secret: docker_username
     password:
@@ -19,11 +17,28 @@ steps:
     status: [ success ]
     branch: [ master ]
 
+- name: tag
+  image: plugins/docker
+  settings:
+    repo:
+      from_secret: docker_repository
+    tags: ${DRONE_TAG}
+    registry:
+      from_secret: docker_registry
+    username:
+      from_secret: docker_username
+    password:
+      from_secret: docker_password
+  when:
+    status: [ success ]
+    event:
+      - tag
+
 - name: deploy
   image: quving/drone-rancher-cicd:latest
   settings:
     stamp: ${DRONE_COMMIT}
-    kubernetes_deployment: citypyo-api
+    kubernetes_deployment: noise-api,noise-worker
     kubernetes_namespace: ${DRONE_BRANCH}
     rancher_url:
       from_secret: rancher_url
