@@ -105,6 +105,11 @@ def getLayer(userid, layername, dirname=None):
     filepath = "data/user/"
     filepath += userid 
     filepath += "/"
+    
+    if dirname:
+        # look in specific folder, like for abm results
+        filepath += dirname +'/'
+    
     filepath += layername
     filepath += ".json"
     if os.path.isfile(filepath):
