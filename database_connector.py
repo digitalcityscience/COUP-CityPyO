@@ -23,7 +23,14 @@ def isUserRestricted(userid):
 
         return jsondata[userid]["restricted"]
 
-    return True
+
+def getUserContext(userid):
+
+    with open(user_db_file) as jsonfile:
+        jsondata = json.load(jsonfile)
+
+        return jsondata[userid]["context"]
+
 
 def checkPass(userid, password):
     with open(user_db_file) as jsonfile:

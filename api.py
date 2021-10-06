@@ -6,7 +6,7 @@ import json
 
 from flask import Flask, request, abort
 from flask_cors import CORS, cross_origin
-from database_connector import makeUser, checkPass, getUserId, getLayer, changeLayer, checkUser, isUserRestricted
+from database_connector import getUserContext, makeUser, checkPass, getUserId, getLayer, changeLayer, checkUser, isUserRestricted
 from abm_filters import apply_time_filters, apply_agent_filters
 
 
@@ -83,10 +83,11 @@ def login():
         if not checkPass(userid, password):
             abort(401)
         restricted = isUserRestricted(userid)
+        context = getUserContext(userid)
     except ValueError:
         abort(401)
 
-    return {"user_id": userid, "restricted": restricted}
+    return {"user_id": userid, "restricted": restricted, "context": context}
 
 
 @app.route('/register', methods=['POST'])
