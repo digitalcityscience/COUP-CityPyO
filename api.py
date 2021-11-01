@@ -13,6 +13,7 @@ from abm_filters import apply_time_filters, apply_agent_filters
 app = Flask(__name__)
 CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
+log_dir = "data/logs/"
 
 
 def parseReq(request):
@@ -36,7 +37,6 @@ def parseReq(request):
 
 
 def log_login_request(username):
-    log_dir = "data/logs/"
     filepath = log_dir + "login_requests.csv"
 
     if not os.path.isdir(log_dir):
@@ -51,6 +51,29 @@ def log_login_request(username):
         # add login request
         log_file.write("\n" + str(datetime.datetime.now()) + "," + username)
 
+
+# logs a request performed to the AIT, in order to keep track of how many requests we sent there
+def log_ait_calc_request(data: dict):
+
+    filepath = log_dir + "ait_calc_requests" + ".csv"
+
+    if not os.path.isdir(log_dir):
+        os.mkdir(log_dir)
+
+    if not os.path.isfile(filepath):
+        with open(filepath, "w") as log_file:
+            # create file with headers
+            log_file.write("timestamp, calc_type, result_uuid, target_url")
+
+    with open(filepath, "a") as log_file:
+        # add login request
+        log_file.write(
+            "\n"
+            + data["timestamp"] + ","
+            + data["calc_type"] + ","
+            + data["result_uuid"] + ","
+            + data["target_url"]
+        )
 
 
 @app.route('/')
@@ -212,6 +235,20 @@ def addLayerData(query):
         abort(400)
 
     return "success"
+
+@app.route("/logCalcRequestAIT/", methods=['POST'])
+def addLogDataRoute():
+    params = request.json
+    
+    try:
+        log_ait_calc_request(params)
+    except Exception as e:
+        print("/logCalcRequestAIT/", params)
+        print(e)
+        abort(400)
+        
+    return "success"
+
 
 @app.route("/combineLayers", methods=['POST'])
 def combineLayersRoute():
