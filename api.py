@@ -6,12 +6,15 @@ import json
 
 from flask import Flask, request, abort
 from flask_cors import CORS, cross_origin
+from flask_compress import Compress
+
 from database_connector import getUserContext, makeUser, checkPass, getUserId, getLayer, changeLayer, checkUser, isUserRestricted
 from abm_filters import apply_time_filters, apply_agent_filters
 
 
 app = Flask(__name__)
 CORS(app)
+Compress(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 log_dir = "data/logs/"
 
