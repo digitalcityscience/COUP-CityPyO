@@ -16,7 +16,7 @@ def test_register_pos():
     password = "blubb"
     data = {
         "username": username,
-        "password": password
+        "password": password,
     }
     response = requests.post(root_url + "register", json=data)
     assert (response.status_code == 200)
@@ -195,7 +195,7 @@ def test_nouser():
     assert (response.status_code == 401)
 
 
-def add_abm_test_data():
+def add_abm_test_data(userid):
     scenarios = {
         "scenario_1": {
             "bridge_1": True,
@@ -213,12 +213,12 @@ def add_abm_test_data():
         },
     }
 
-    with open("data/global/abmScenarios.json", "w+") as jsonfile:
+    with open("data/" + userid + "/abmScenarios.json", "w+") as jsonfile:
         json.dump(scenarios, jsonfile)
 
-    if not os.path.exists("data/global/abm"):
-        os.mkdir("data/global/abm")
-    with open("data/global/abm/scenario_1.json", "w+") as jsonfile:
+    if not os.path.exists("data" + userid + "abm"):
+        os.mkdir("data" + userid + "abm")
+    with open("data" + userid + "abm/scenario_1.json", "w+") as jsonfile:
         jsondata = {
             "data": [
                 {
