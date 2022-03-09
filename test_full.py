@@ -17,9 +17,11 @@ def test_register_pos():
     data = {
         "username": username,
         "password": password,
+        "context": "my_project"
     }
     response = requests.post(root_url + "register", json=data)
     assert (response.status_code == 200)
+    print("registered user")
 
 
 def test_login_pos():
@@ -30,6 +32,8 @@ def test_login_pos():
         "password": password
     }
     response = requests.post(root_url + "login", json=data)
+    print(response)
+    print(response.status_code)
     assert (response.status_code == 200)
 
 

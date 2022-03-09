@@ -121,10 +121,11 @@ def register():
     params = parseReq(request)
     username = params.get('username')
     password = params.get('password')
+    context = params.get('context')
     if username == "":
         abort(400)
     try:
-        userid = str(makeUser(username, password))
+        userid = str(makeUser(username, password, context))
     except ValueError:
         abort(403)  # username already exists
 

@@ -1,7 +1,7 @@
 import os
 import json
-import datetime
 import random
+import geopandas
 
 user_db_file = "data/users.json"
 
@@ -43,7 +43,7 @@ def generateID():
     # print("hash value:", hash)
     return hash
 
-def makeUser(username, password):
+def makeUser(username, password, context=""):
     if not os.path.exists("data"):
         os.mkdir("data")
     if not os.path.exists(user_db_file):
@@ -67,7 +67,7 @@ def makeUser(username, password):
     while(checkUser(userid)): # id already exists (what a chance!)
         userid = generateID() # generate a new one
 
-    jsondata[userid] = {"username": username, "password": password, "restricted": True }
+    jsondata[userid] = {"username": username, "password": password, "restricted": True, "context": context }
 
 
     with open(user_db_file, "w") as jsonfile:
