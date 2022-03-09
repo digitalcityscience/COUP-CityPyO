@@ -72,27 +72,43 @@ def test_register_neg():
     assert (response.status_code == 403)
 
 
-def test_layerchange_add_new():
+def test_layerchange_add_new_geojson_layer():
     query = "test_layer"
     data = {
         "userid": getUserId("testuser"),
-        "data": {"type": "FeatureCollection", "features": [{"type": "Feature", "id": 0}]}
+        "data": {
+            "features": [ 
+                get_geojson_test_feature(to_have_id=0, to_be_valid=True)
+            ]
+        }
     }
     response = requests.post(root_url + "addLayerData/" + query, json=data)
     assert (response.status_code == 200)
 
+def test_layerchange_add_new_geojson_layer_invalid():
+    query = "test_layer_invalid"
+    data = {
+        "userid": getUserId("testuser"),
+        "data": {
+            "features": [ 
+                get_geojson_test_feature(to_have_id=0, to_be_valid=False)
+            ]
+        }
+    }
+    response = requests.post(root_url + "addLayerData/" + query, json=data)
+    assert (response.status_code == 400)
 
-def test_layer():
+
+def test_get_entire_layer():
     data = {
         "userid": getUserId("testuser"),
         "layer": "test_layer"
     }
     response = requests.get(root_url + "getLayer", json=data)
     assert (response.status_code == 200)
-    print(response.json()["type"])
 
 
-def test_get_layerdata():
+def test_get_layerdata_single_prop():
     query = "features/0/id"
     data = {
         "userid": getUserId("testuser"),
@@ -102,7 +118,77 @@ def test_get_layerdata():
     response = requests.post(root_url + "getLayer/" + query, json=data)
 
     assert (response.status_code == 200)
-    print(response.text)
+
+
+def test_layerchange_nonexistant():
+    query = "nonexistant_layer/features/0/id"
+    data = {
+        "userid": getUserId("testuser"),
+        "data": -1
+    }
+    response = requests.post(root_url + "addLayerData/" + query, json=data)
+    assert (response.status_code == 400)
+
+
+def test_layerchange_add_new_data_layer():
+    query = "test_layer2/"
+    data = {
+        "userid": getUserId("testuser"),
+        "data": {"data": [{"state": 0}, {"state": 2}, {"state": 4}]}
+    }
+    response = requests.post(root_url + "addLayerData/" + query, json=data)
+    assert (response.status_code == 200)
+
+
+def test_update_data_layer_single_prop():
+    import random
+    query = "test_layer2/data/1/state"
+    data = {
+        "userid": getUserId("testuser"),
+        "data": {"somedata": random.randint(0, 1000)}
+    }
+    response = requests.post(root_url + "addLayerData/" + query, json=data)
+    assert (response.status_code == 200)
+
+
+def test_layerchange_update_geojson_feature():
+    query = "test_layer/features/0/"
+    data = {
+        "userid": getUserId("testuser"),
+        "data": get_geojson_test_feature(to_have_id=1, to_be_valid=True)
+    
+    }
+    response = requests.post(root_url + "addLayerData/" + query, json=data)
+    assert (response.status_code == 200)
+    
+def test_layerchange_update_geojson_feature_invalid():
+    query = "test_layer/features/0/"
+    data = {
+        "userid": getUserId("testuser"),
+        "data": get_geojson_test_feature(to_have_id=1, to_be_valid=False)
+    }
+    response = requests.post(root_url + "addLayerData/" + query, json=data)
+    assert (response.status_code == 400)
+
+
+def test_update_data_layer_all():
+    query = "test_layer/"
+    data = {
+        "userid": getUserId("testuser"),
+        "data": {"data": [{"state": 0}, {"state": 2}, {"state": 4}]}
+    }
+    response = requests.post(root_url + "addLayerData/" + query, json=data)
+    assert (response.status_code == 200)
+
+
+def test_nouser():
+    query = "test_layer"
+    data = {
+        "userid": "189637",
+        "data": -1
+    }
+    response = requests.post(root_url + "addLayerData/" + query, json=data)
+    assert (response.status_code == 401)
 
 
 def test_abm_request():
@@ -142,64 +228,40 @@ def test_abm_request():
         "end_time": 30000.0
     }
 
-    response_with_time_filter = requests.post(root_url + "getLayer/" + query, json=data_with_time_filter)
-    response_without_time_filter = requests.post(root_url + "getLayer/" + query, json=data_without_time_filter)
+    response_with_time_filter = requests.post(
+        root_url + "getLayer/" + query, json=data_with_time_filter)
+    response_without_time_filter = requests.post(
+        root_url + "getLayer/" + query, json=data_without_time_filter)
 
-   
     assert (response_with_time_filter.status_code == 200)
     assert (response_without_time_filter.status_code == 200)
-    assert (len(response_without_time_filter.json()["data"]) > len(response_with_time_filter.json()["data"]))
+    assert (len(response_without_time_filter.json()["data"]) > len(
+        response_with_time_filter.json()["data"]))
 
 
-def test_layerchange_nonexistant():
-    query = "nonexistant_layer/features/0/id"
-    data = {
-        "userid": getUserId("testuser"),
-        "data": -1
+def get_geojson_test_feature(to_have_id: int, to_be_valid: bool):
+    valid_coordinates = [[[10.0, 53.5], [10.1, 53.5], [10.1, 53.6], [10.0, 53.6], [10.0, 53.5]]]
+    invalid_coordinates = [[[10.0, 53.5], [10.1, 53.5], [10.0, 53.5], [10.1, 53.6], [10.0, 53.6]]] # self intersecting bowtie 
+
+    geojson_test_feature_trunk = {
+        "type": "Feature",
+        "id": None,
+        "properties": {"test_prop": "test_value"},
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": []
+        }
     }
-    response = requests.post(root_url + "addLayerData/" + query, json=data)
-    assert (response.status_code == 400)
+
+    test_feature = geojson_test_feature_trunk.copy()
+    test_feature["id"] = to_have_id
+    if not to_be_valid:
+        test_feature["geometry"]["coordinates"] = invalid_coordinates
+    else:
+        test_feature["geometry"]["coordinates"] = valid_coordinates
 
 
-def test_layerchange_add2():
-    query = "test_layer2/"
-    data = {
-        "userid": getUserId("testuser"),
-        "data": {"data": [{"state": 0}, {"state": 2}, {"state": 4}]}
-    }
-    response = requests.post(root_url + "addLayerData/" + query, json=data)
-    assert (response.status_code == 200)
-
-
-def test_layerchange_add():
-    import random
-    query = "test_layer2/data/1/state"
-    data = {
-        "userid": getUserId("testuser"),
-        "data": {"somedata": random.randint(0, 1000)}
-    }
-    response = requests.post(root_url + "addLayerData/" + query, json=data)
-    assert (response.status_code == 200)
-
-
-def test_layerchange_all():
-    query = "test_layer/"
-    data = {
-        "userid": getUserId("testuser"),
-        "data": {"data": [{"state": 0}, {"state": 2}, {"state": 4}]}
-    }
-    response = requests.post(root_url + "addLayerData/" + query, json=data)
-    assert (response.status_code == 200)
-
-
-def test_nouser():
-    query = "test_layer"
-    data = {
-        "userid": "189637",
-        "data": -1
-    }
-    response = requests.post(root_url + "addLayerData/" + query, json=data)
-    assert (response.status_code == 401)
+    return test_feature
 
 
 def add_abm_test_data(userid):
@@ -291,24 +353,30 @@ if __name__ == "__main__":
         test_login_neg_user()
         print("test_register_neg")
         test_register_neg()
-        print("test_layerchange_add_new")
-        test_layerchange_add_new()
+        print("test_layerchange_add_new_geojson_layer")
+        test_layerchange_add_new_geojson_layer()
+        print("test_layerchange_add_new_geojson_layer_invalid")
+        test_layerchange_add_new_geojson_layer_invalid()
         print("test_layer")
-        test_layer()
-        print("test_layerdata")
-        test_get_layerdata()
-        print("test abm request")
-        test_abm_request()
+        test_get_entire_layer()
+        print("test_get_layerdata_single_prop")
+        test_get_layerdata_single_prop()
         print("test_layerchange_nonexistant")
         test_layerchange_nonexistant()
-        print("test_layerchange_add2")
-        test_layerchange_add2()
-        print("test_layerchange_add")
-        test_layerchange_add()
-        print("test_layerchange_all")
-        test_layerchange_all()
+        print("test_layerchange_add_geojson_feature")
+        test_layerchange_update_geojson_feature()
+        print("test_layerchange_add_geojsonfeature_invalid")
+        test_layerchange_update_geojson_feature_invalid()
+        print("test_layerchange_add_new_data_layer")
+        test_layerchange_add_new_data_layer()
+        print("test_update_data_layer_single_prop")
+        test_update_data_layer_single_prop()
+        print("test_update_data_layer_all")
+        test_update_data_layer_all()
         print("test_nouser")
         test_nouser()
+        print("test abm request")
+        test_abm_request()
     except AssertionError as e:
         print("^^^^ Failed here ^^^^\n")
         raise e

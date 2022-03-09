@@ -131,6 +131,7 @@ def register():
 
     return {"user_id": userid}
 
+
 @app.route("/getLayer", methods=['POST', 'GET'])
 # @app.route("/getLayer/", methods = ['POST'])
 def getLayerRoute():
@@ -147,7 +148,7 @@ def getLayerRoute():
     except FileNotFoundError as e:
         print("/getLayer", params)
         print(e)
-        abort(404)
+        abort(404, layer)
 
 
 @app.route("/getLayer/<path:query>", methods=['POST'])
@@ -167,7 +168,7 @@ def getLayerData(query):
         except FileNotFoundError as e:
             print("/getLayer/" + query, params)
             print(e)
-            abort(404)
+            abort(404, query)
 
         data = json
         props = query.split("/")
@@ -193,7 +194,7 @@ def getAbmData(query):
     except FileNotFoundError as e:
         print("/getLayer/" + query, params)
         print(e)
-        abort(404)
+        abort(404, "ABM DATA for " + query)
 
     abm_result = None
     scenario_name = None
@@ -234,9 +235,10 @@ def addLayerData(query):
     try:
         changeLayer(userid, layername, props, data)
     except Exception as e:
-        print("/addLayerData/" + query, params)
-        print(e)
-        abort(400)
+        print("EXCEPTION OCCURED")
+        print("Query :", "/addLayerData/" + query, params)
+        print("Exception:", e)
+        abort(400, e)
 
     return "success"
 
@@ -271,11 +273,10 @@ def combineLayersRoute():
     except Exception as e:
         print("combine Layers did not work")
         print(e)
-        abort(400)
+        abort(400,  "combine Layers did not work, Error: " + e)
 
 
 def combineLayers(layer_1, layer_2):
-
     # make geodataframe from first layer
     layer_1_gdf = geopandas.GeoDataFrame.from_features(
         layer_1["features"],
