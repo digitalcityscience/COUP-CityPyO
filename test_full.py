@@ -2,6 +2,8 @@ import requests
 from database_connector import deleteUser, getUserId
 import os
 import json
+import shutil
+
 
 root_url = "http://127.0.0.1:5000/"
 
@@ -115,7 +117,7 @@ def test_abm_request():
     with open(user_db_file, 'w') as jsonwrite:
         json.dump(jsondata, jsonwrite)
 
-    add_abm_test_data()
+    add_abm_test_data(userid)
 
     query = "abmScenario"
     data_without_time_filter = {
@@ -143,6 +145,7 @@ def test_abm_request():
     response_with_time_filter = requests.post(root_url + "getLayer/" + query, json=data_with_time_filter)
     response_without_time_filter = requests.post(root_url + "getLayer/" + query, json=data_without_time_filter)
 
+   
     assert (response_with_time_filter.status_code == 200)
     assert (response_without_time_filter.status_code == 200)
     assert (len(response_without_time_filter.json()["data"]) > len(response_with_time_filter.json()["data"]))
@@ -217,12 +220,12 @@ def add_abm_test_data(userid):
         },
     }
 
-    with open("data/" + userid + "/abmScenarios.json", "w+") as jsonfile:
+    with open("data/" + "user/" + userid + "/abmScenarios.json", "w") as jsonfile:
         json.dump(scenarios, jsonfile)
 
-    if not os.path.exists("data" + userid + "abm"):
-        os.mkdir("data" + userid + "abm")
-    with open("data" + userid + "abm/scenario_1.json", "w+") as jsonfile:
+    if not os.path.exists("data" + "/" + "user" "/" + userid + "/" + "abm"):
+        os.mkdir("data" + "/" + "user" + "/" + userid + "/" + "abm")
+    with open("data" + "/" + "user" + "/" + userid + "/" + "abm" + "/" + "scenario_1.json", "w+") as jsonfile:
         jsondata = {
             "data": [
                 {
@@ -269,15 +272,9 @@ def cleanup():
         os.remove(filepath)
     filepath = "data/user/" + getUserId("testuser")
     if os.path.exists(filepath):
-        os.rmdir(filepath)
+        shutil.rmtree(filepath)
     print("deleting test user", "testuser")
     deleteUser(getUserId("testuser"))
-
-    # delete test data abm
-    if os.path.exists("abm/scenario_1.json"):
-        os.remove("abm/scenario_1.json")
-    if os.path.exists("abm"):
-        os.rmdir("abm")
 
 
 if __name__ == "__main__":
