@@ -186,8 +186,6 @@ def getAbmData(query):
     params = request.json
     userid = params.get("userid")
     requested_scenario_props = params.get("scenario_properties")  # todo: only works while request is post
-    agent_filters = params.get("agent_filters")  # todo: only works while request is post
-    time_filters = params.get("time_filters")  # todo: only works while request is post
 
     try:
         scenario_list = getLayer(userid, "abmScenarios")
@@ -213,13 +211,21 @@ def getAbmData(query):
         print("no abm result found")
         abort(404)  # no matching result found
 
-    if time_filters:
-        apply_time_filters(abm_result, time_filters)
+    user_context = getUserContext(userid)
+    if user_context == "grasbrook":
+        amenity_id = scenario_props["main_street_orientation"] +  "_" + scenario_props["roof_amenities"]
+    elif user_context == "schb":
+        amenity_id = scenario_props["amenity_config"]
+    else:
+        abort(400, f"unknown user context {user_context}")
+    
+    amenities_geojson = getLayer(userid, "abmAmenities")[amenity_id]
 
-    if agent_filters:
-        apply_agent_filters(abm_result, agent_filters)
-
-    return {"data": abm_result["data"], "scenario_name": scenario_name}
+    return {
+        "simulationResult": abm_result["data"],
+        "amenitiesGeoJSON": amenities_geojson,
+        "scenario_name": scenario_name
+    }
 
 
 @app.route("/addLayerData/<path:query>", methods=['POST'])
