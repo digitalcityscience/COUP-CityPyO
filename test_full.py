@@ -19,7 +19,7 @@ def test_register_pos():
     data = {
         "username": username,
         "password": password,
-        "context": "my_project"
+        "context": "grasbrook"
     }
     response = requests.post(root_url + "register", json=data)
     assert (response.status_code == 200)
@@ -77,7 +77,7 @@ def test_layerchange_add_new_geojson_layer():
     data = {
         "userid": getUserId("testuser"),
         "data": {
-            "features": [ 
+            "features": [
                 get_geojson_test_feature(to_have_id=0, to_be_valid=True)
             ]
         }
@@ -85,12 +85,13 @@ def test_layerchange_add_new_geojson_layer():
     response = requests.post(root_url + "addLayerData/" + query, json=data)
     assert (response.status_code == 200)
 
+
 def test_layerchange_add_new_geojson_layer_invalid():
     query = "test_layer_invalid"
     data = {
         "userid": getUserId("testuser"),
         "data": {
-            "features": [ 
+            "features": [
                 get_geojson_test_feature(to_have_id=0, to_be_valid=False)
             ]
         }
@@ -156,11 +157,12 @@ def test_layerchange_update_geojson_feature():
     data = {
         "userid": getUserId("testuser"),
         "data": get_geojson_test_feature(to_have_id=1, to_be_valid=True)
-    
+
     }
     response = requests.post(root_url + "addLayerData/" + query, json=data)
     assert (response.status_code == 200)
-    
+
+
 def test_layerchange_update_geojson_feature_invalid():
     query = "test_layer/features/0/"
     data = {
@@ -206,42 +208,28 @@ def test_abm_request():
     add_abm_test_data(userid)
 
     query = "abmScenario"
-    data_without_time_filter = {
+    data = {
         "userid": userid,
         "scenario_properties": {
-            "bridge_1": True,
-            "amenities_roof": "random",
-            "blocks": "open",
-            "bridge_2": False,
-            "main_street_orientation": "vertical"
-        },
-        "agent_filters": {
-            "mode": "foot",
-            "student_or_adult": "adult",
-            "resident_or_visitor": "resident"
+            'bridge_1': True,
+            'bridge_2': False,
+            'blocks': 'open',
+            'main_street_orientation': 'vertical',
+            'roof_amenities': 'random'
         }
     }
 
-    data_with_time_filter = data_without_time_filter.copy()
-    data_with_time_filter["time_filters"] = {
-        "start_time": 10000.0,
-        "end_time": 30000.0
-    }
+    response = requests.post(
+        root_url + "getLayer/" + query, json=data)
 
-    response_with_time_filter = requests.post(
-        root_url + "getLayer/" + query, json=data_with_time_filter)
-    response_without_time_filter = requests.post(
-        root_url + "getLayer/" + query, json=data_without_time_filter)
-
-    assert (response_with_time_filter.status_code == 200)
-    assert (response_without_time_filter.status_code == 200)
-    assert (len(response_without_time_filter.json()["data"]) > len(
-        response_with_time_filter.json()["data"]))
+    assert (response.status_code == 200)
 
 
 def get_geojson_test_feature(to_have_id: int, to_be_valid: bool):
-    valid_coordinates = [[[10.0, 53.5], [10.1, 53.5], [10.1, 53.6], [10.0, 53.6], [10.0, 53.5]]]
-    invalid_coordinates = [[[10.0, 53.5], [10.1, 53.5], [10.0, 53.5], [10.1, 53.6], [10.0, 53.6]]] # self intersecting bowtie 
+    valid_coordinates = [[[10.0, 53.5], [10.1, 53.5],
+                          [10.1, 53.6], [10.0, 53.6], [10.0, 53.5]]]
+    invalid_coordinates = [[[10.0, 53.5], [10.1, 53.5], [10.0, 53.5], [
+        10.1, 53.6], [10.0, 53.6]]]  # self intersecting bowtie
 
     geojson_test_feature_trunk = {
         "type": "Feature",
@@ -260,7 +248,6 @@ def get_geojson_test_feature(to_have_id: int, to_be_valid: bool):
     else:
         test_feature["geometry"]["coordinates"] = valid_coordinates
 
-
     return test_feature
 
 
@@ -271,19 +258,27 @@ def add_abm_test_data(userid):
             "bridge_2": False,
             "blocks": "open",
             "main_street_orientation": "vertical",
-            "amenities_roof": "random",
+            "roof_amenities": "random",
         },
         "scenario_2": {
             "brige_1": False,
             "bridge_2": True,
             "blocks": "open",
             "main_street_orientation": "vertical",
-            "amenities_roof": "random"
-        },
+            "roof_amenities": "random"
+        }
+    }
+
+    amenities = {
+        "vertical_random": {"features": []}
     }
 
     with open("data/" + "user/" + userid + "/abmScenarios.json", "w") as jsonfile:
         json.dump(scenarios, jsonfile)
+    with open("data/" + "user/" + userid + "/abmAmenities.json", "w") as jsonfile:
+            json.dump(amenities, jsonfile)
+
+    
 
     if not os.path.exists("data" + "/" + "user" "/" + userid + "/" + "abm"):
         os.mkdir("data" + "/" + "user" + "/" + userid + "/" + "abm")
@@ -295,25 +290,6 @@ def add_abm_test_data(userid):
                               "student_or_adult": "adult", "resident_or_visitor": "resident"},
                     "timestamps": [56760.0, 56880.0],
                     "path": [["10.029116616518474", "53.52583144920887"], ["10.030062856331478", "53.52693663639755"]]
-                },
-                {
-                    "agent": {"source": "1-02_work-leisure-home.csv", "id": "worker_visitor1266",
-                              "mode": "foot", "student_or_adult": "student", "resident_or_visitor": "resident"},
-                    "timestamps": [10920.0, 11040.0],
-                    "path": [["10.028048217630724", "53.520463720950715"], ["10.025995494385159", "53.52060665984872"]]
-                },
-                {
-                    "agent": {"source": "1-03_work-lunch-work.csv", "id": "worker19", "mode": "public_transport",
-                              "student_or_adult": "student", "resident_or_visitor": "unknown"},
-                    "timestamps": [19440.0, 19560.0],
-                    "path": [["10.031381105913587", "53.52557404766839"], ["10.029512078475264", "53.52618638139043"]
-                             ]
-                },
-                {
-                    "agent": {"source": "1-03_work-lunch-work.csv", "id": "worker21", "mode": "foot",
-                              "student_or_adult": "adult", "resident_or_visitor": "unknown"},
-                    "timestamps": [24480.0, 24600.0],
-                    "path": [["10.03363059230029", "53.521674642537704"], ["10.03175386167115", "53.52229952834055"]]
                 }
             ]
         }
