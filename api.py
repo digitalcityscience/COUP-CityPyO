@@ -160,6 +160,7 @@ def getLayerData(query):
     if not checkUser(userid):
         abort(401)
 
+    # choose matching abm result by scenario_properties
     if query == "abmScenario":
         return getAbmData(query)
     else:
@@ -181,11 +182,11 @@ def getLayerData(query):
 
         return {"data": data}
 
-
+# TODO Delete when ABM results are no longer precooked.
 def getAbmData(query):
     params = request.json
     userid = params.get("userid")
-    requested_scenario_props = params.get("scenario_properties")  # todo: only works while request is post
+    requested_scenario_props = params.get("scenario_properties")
 
     try:
         scenario_list = getLayer(userid, "abmScenarios")
