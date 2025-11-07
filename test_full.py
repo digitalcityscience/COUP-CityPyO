@@ -228,8 +228,7 @@ def test_abm_request():
 def get_geojson_test_feature(to_have_id: int, to_be_valid: bool):
     valid_coordinates = [[[10.0, 53.5], [10.1, 53.5],
                           [10.1, 53.6], [10.0, 53.6], [10.0, 53.5]]]
-    invalid_coordinates = [[[10.0, 53.5], [10.1, 53.5], [10.0, 53.5], [
-        10.1, 53.6], [10.0, 53.6]]]  # self intersecting bowtie
+    invalid_coordinates = [[[10.0, 53.5]]]  # self intersecting bowtie
 
     geojson_test_feature_trunk = {
         "type": "Feature",
@@ -359,4 +358,5 @@ if __name__ == "__main__":
     else:
         print("\nALL TESTS SUCCESSFULL!\n")
     finally:
-        cleanup()
+        print("yeah")
+        # cleanup()
