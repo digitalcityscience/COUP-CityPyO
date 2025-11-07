@@ -213,7 +213,7 @@ def changeLayer(userid,layername,query,data):
 
 
 # checks if input data is a geojson, if so, if valid geojson
-def check_data_validity(jsondata: dict):
+def check_data_validity(jsondata: dict, recursive_call=False):
     # check if new json is valid geojson
     if "features" in jsondata: # if jsondata is geojson like
         # try creating a geodataframe from the data
@@ -232,4 +232,10 @@ def check_data_validity(jsondata: dict):
         invalid_features = gdf[gdf["valid_geometry"] == False]
 
         if len(invalid_features.length) > 0:
-            raise ValueError("Invalid geometries provided: ", list(invalid_features.items()))
+            if not recursive_call:
+                # try to fix the geoms by buffer 0
+                gdf.geometry = gdf.geometry.buffer(0)
+                check_data_validity(json.loads(gdf.to_json()), True)
+            else:
+                print("recursive call")
+                raise ValueError("Invalid geometries provided: ", list(invalid_features.items()))
