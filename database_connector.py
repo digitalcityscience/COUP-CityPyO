@@ -3,6 +3,8 @@ import json
 import random
 import geopandas
 
+from check_and_fix_data import ensure_valid_geojson
+
 user_db_file = "data/users.json"
 
 def getUserId(username):
@@ -138,7 +140,8 @@ def addLayer(userid,layername,data):
         raise ValueError("layer already exists!")
     
     # check if input data is valid (only for geojson)
-    check_data_validity(data)
+    if data.get("features"):
+        data = ensure_valid_geojson(data)
     with open(filepath, "w") as layerfile:
         json.dump(data, layerfile)
 
@@ -198,7 +201,8 @@ def changeLayer(userid,layername,query,data):
             jsondata = recurse_change(jsondata,query,data)
 
         # check if input data is valid (only for geojson)
-        check_data_validity(jsondata)
+        if jsondata.get("features"):
+            jsondata = ensure_valid_geojson(jsondata)
 
         #write
         with open(filepath, "w") as layerfile:
@@ -210,32 +214,3 @@ def changeLayer(userid,layername,query,data):
         addLayer(userid,layername,data)
 
     update_hash(userid, layername)
-
-
-# checks if input data is a geojson, if so, if valid geojson
-def check_data_validity(jsondata: dict, recursive_call=False):
-    # check if new json is valid geojson
-    if "features" in jsondata: # if jsondata is geojson like
-        # try creating a geodataframe from the data
-        try:
-            gdf = geopandas.GeoDataFrame.from_features(jsondata["features"])
-        except Exception as e:
-            message = str(e)
-            if 'geometry' in message:
-                raise ValueError("Invalid GeoJSON missing 'geometry' info in features")
-            elif 'properties' in message:
-                raise ValueError("Invalid GeoJSON missing 'properties' info in features")
-            else:
-                raise ValueError("Invalid GeoJSON provided", e)
-
-        gdf["valid_geometry"] = gdf["geometry"].is_valid == True
-        invalid_features = gdf[gdf["valid_geometry"] == False]
-
-        if len(invalid_features.length) > 0:
-            if not recursive_call:
-                # try to fix the geoms by buffer 0
-                gdf.geometry = gdf.geometry.buffer(0)
-                check_data_validity(json.loads(gdf.to_json()), True)
-            else:
-                print("recursive call")
-                raise ValueError("Invalid geometries provided: ", list(invalid_features.items()))
