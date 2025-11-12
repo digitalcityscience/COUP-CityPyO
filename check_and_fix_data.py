@@ -9,7 +9,7 @@ def get_invalid_geometries(gdf) -> geopandas.GeoDataFrame | None:
     if len(invalid_features.length) > 0:
         return invalid_features
     
-    return None
+    return geopandas.GeoDataFrame()
 
 
 def fix_geoms_by_buffer_0(gdf: geopandas.GeoDataFrame) -> geopandas.GeoDataFrame:
@@ -31,11 +31,12 @@ def ensure_valid_geojson(jsondata: dict) -> dict:
         else:
             raise ValueError("Invalid GeoJSON provided", e)
 
-    if invalid := get_invalid_geometries(gdf):
+    invalids_gdf = get_invalid_geometries(gdf)
+    if len(invalids_gdf):
         gdf = fix_geoms_by_buffer_0(gdf)
         # check again
-        if get_invalid_geometries(gdf):
-            raise ValueError(f"Invalid geometries provided : {json.loads(invalid.to_json())}")
+        if len(get_invalid_geometries(gdf)):
+            raise ValueError(f"Invalid geometries provided : {json.loads(invalids_gdf.to_json())}")
         
     # convert back to dict
     return json.loads(gdf.to_json())
